@@ -24,6 +24,10 @@
 
 #include <stdio.h>
 
+#ifdef GPROF_PROFILING
+#include <vitagprof.h>
+#endif
+
 #define GAME_DATA_PATH "ux0:data/butterscotch/"
 #define GAME_DATA_WIN_PATH GAME_DATA_PATH "data.win"
 
@@ -249,6 +253,12 @@ void loop(const char* dataWinPath) {
 
     sceClibPrintf("Runner successfully created and inited first room!!\n");
 
+#ifdef GPROF_PROFILING
+    gprof_stop(nullptr, 0);
+    gprof_start();
+    fprintf(stderr, "gprof: Profiling started!\n");
+#endif
+
     int32_t gameW = (int32_t) gen8->defaultWindowWidth;
     int32_t gameH = (int32_t) gen8->defaultWindowHeight;
 
@@ -383,6 +393,17 @@ void loop(const char* dataWinPath) {
     }
 
 free_butterscotch:
+#ifdef GPROF_PROFILING
+    {
+        int profDataLen = strlen(bundleDir) + strlen("/gprof.out") + 1;
+        char* profDataPath = malloc(profDataLen);
+        snprintf(profDataPath, profDataLen, "%s%s", bundleDir, "/gprof.out");
+        fprintf(stderr, "gprof: Writing profiling data to %s\n", profDataPath);
+        gprof_stop(profDataPath, 1);
+        fprintf(stderr, "gprof: Done\n");
+    }
+#endif
+
     free(safePath);
     Runner_free(runner);
     OverlayFileSystem_destroy(overlayFs);
