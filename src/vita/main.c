@@ -31,6 +31,35 @@
 #define GAME_DATA_PATH "ux0:data/butterscotch/"
 #define GAME_DATA_WIN_PATH GAME_DATA_PATH "data.win"
 
+void platformLog(const logType type, const char *format, va_list va) {
+    FILE *out = stderr;
+    const char* colourPrefix = ANSI_COLOUR_CODE_RESET;
+    const char* textPrefix = "";
+    switch (type) {
+        case LOG_TYPE_NORMAL:
+            out = stdout;
+            break;
+        case LOG_TYPE_WARNING:
+            colourPrefix = ANSI_COLOUR_CODE_BOLD_YELLOW;
+            textPrefix = "Warning: ";
+            break;
+        case LOG_TYPE_ERROR:
+            colourPrefix = ANSI_COLOUR_CODE_BOLD_RED;
+            textPrefix = "Error: ";
+            break;
+        case LOG_TYPE_DEBUG:
+            colourPrefix = ANSI_COLOUR_CODE_BOLD_PURPLE;
+            textPrefix = "Debug: ";
+            break;
+    }
+
+    fputs(colourPrefix, out);
+    fputs(textPrefix, out);
+    fputs(ANSI_COLOUR_CODE_RESET, out);
+    vfprintf(out, format, va);
+}
+
+
 const GLuint *hostFramebuffer;
 SceCtrlData pad = {0};
 
@@ -224,10 +253,11 @@ void loop(const char* dataWinPath) {
     OverlayFileSystem* overlayFs = OverlayFileSystem_create(bundleDir, GAME_DATA_PATH);
 
     Renderer* renderer = NULL;
-    if (forceLegacyGL)
+    if (forceLegacyGL) {
         renderer = GLLegacyRenderer_create();
-    else
+    } else {
         renderer = GLRenderer_create();
+    }
     hostFramebuffer = &((GLRenderer *)renderer)->hostFramebuffer;
 
     if (!renderer) {
@@ -282,6 +312,9 @@ void loop(const char* dataWinPath) {
         if (shouldStep) {
             // Go to next room
             if (runner->debugMode) {
+                if (RunnerGamepad_buttonCheck(runner->gamepads, 0, GP_SHOULDERL) && RunnerGamepad_buttonCheck(runner->gamepads, 0, GP_SHOULDERR) && RunnerGamepad_buttonCheck(runner->gamepads, 0, GP_START)) {
+                    goto free_butterscotch;
+                }
                 if (RunnerGamepad_buttonCheck(runner->gamepads, 0, GP_PADR) && RunnerGamepad_buttonCheckPressed(runner->gamepads, 0, GP_START)) {
                     DataWin* dw = runner->dataWin;
                     if ((int32_t) dw->gen8.roomOrderCount > runner->currentRoomOrderPosition + 1) {

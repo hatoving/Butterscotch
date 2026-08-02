@@ -710,6 +710,13 @@ elseif(PLATFORM STREQUAL "vita")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always -g -Wall -O3 -mfloat-abi=hard -mtune=cortex-a9 -mfpu=neon -ffast-math")
     set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always -Wno-write-strings -std=c++11")
 
+    option(ENABLE_GPROF_PROFILING "Enable gprof profiling for PS2" OFF)
+    if(ENABLE_GPROF_PROFILING)
+        add_compile_definitions(GPROF_PROFILING)
+        target_compile_options(butterscotch PRIVATE -pg)
+        target_link_options(butterscotch PRIVATE -pg)
+    endif()
+
     # Normally, __VITA__ should already be defined, but for some reason,
     # in my case, this didn't really work... so just in case, when we're
     # building for the Vita, just force-feed these...
@@ -752,6 +759,9 @@ elseif(PLATFORM STREQUAL "vita")
         vitashark
         m
         z
+        vitagprof
+        SceLibKernel_stub
+        SceRtc_stub
         SceShaccCgExt
         mathneon
         taihen_stub
@@ -778,7 +788,7 @@ elseif(PLATFORM STREQUAL "vita")
         SceNpTrophy_stub
     )
 
-    vita_create_self(eboot.bin butterscotch UNSAFE)
+    vita_create_self(eboot.bin butterscotch NO_ASLR UNSAFE)
     vita_create_vpk(Butterscotch.vpk ${VITA_TITLEID} eboot.bin
         VERSION ${VITA_VERSION}
         NAME ${VITA_APP_NAME}
